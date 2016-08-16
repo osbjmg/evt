@@ -149,6 +149,7 @@ def handle_command(command, channel, user) :
                 attachmentText = name + "'s current time: " + (now + datetime.timedelta(seconds=offset)).strftime("%H:%M | %I:%M %p  %Y-%m-%d") + '  (UTC' + str(offset/60/60) + '/' + tz + ')\n' \
                 'EVE current time: ' + now.strftime("%H:%M  %Y-%m-%d")
         else :
+            response_type = 'ephemeral'
             mainText = 'Error: requested an invalid EVE time (' + hours + ':' + minutes + ')'
             attachmentText = ''
 
