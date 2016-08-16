@@ -122,7 +122,6 @@ def handle_command(command, channel, user) :
 
         response_type = 'in_channel'
         if timeValid is True :
-            print 'timeValid? ' + timeValid
             hours=int(hours)
             minutes=int(minutes)
             reqdEveTime = now.replace(hour=hours, minute=minutes)
