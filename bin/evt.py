@@ -37,7 +37,7 @@ def getUserTimezone(user) :
         tz_label = profile['tz_label']
         tz_offset_sec = profile['tz_offset']
         # testnow = some time to represent a time between DST in EMEA and the US
-        now = datetime.datetime.now(tz=pytz.utc) # tz "aware"
+        now = datetime.datetime.now(tz=pytz.utc) # now is tz "aware"
     return tz, tz_label, tz_offset_sec, now, name
 
 def handle_command(command, channel, user) :
@@ -83,19 +83,18 @@ def handle_command(command, channel, user) :
             if re.match(requestedTime, cmd) :
                 wallClockTime = re.match(requestedTime, cmd).group(1)
 
-
-    # no input, give current time
+    # if no input, give current time
     if (command is None or ((command is not None) and (set(command).intersection(now_strings)))):
         tz_city, tz, offset, now, name = getUserTimezone(user)
         response_type = 'in_channel'
         mainText = 'Current EVE Time: '+ str(now.strftime("*%H:%M*   %Y-%m-%d"))
         if tz_city is not None:
-            attachmentText = name + "'s time: " + now.astimezone(pytz.timezone(tz_city)).strftime("%H:%M | %I:%M %p   %Y-%m-%d") + '  (UTC' + str(offset/60/60) + '/' + tz + ')'
+            attachmentText = name + "'s current time: " + now.astimezone(pytz.timezone(tz_city)).strftime("%H:%M | %I:%M %p   %Y-%m-%d") + '  (UTC' + str(offset/60/60) + '/' + tz + ')'
         else : # some users do not have a tz in slack, but usually have the tz_label and offset, here I have to trust slack converted properly
-            attachmentText = name + "'s time: " + (now + datetime.timedelta(seconds=offset)).strftime("%H:%M | %I:%M %p   %Y-%m-%d") + '  (UTC' + str(offset/60/60) + '/' + tz + ')'
+            attachmentText = name + "'s current time: " + (now + datetime.timedelta(seconds=offset)).strftime("%H:%M | %I:%M %p   %Y-%m-%d") + '  (UTC' + str(offset/60/60) + '/' + tz + ')'
 
     # consider making these all function calls in the event we need to break?
-    elif wallClockTime is not None: # a time is given, let's determine time until EVT (no date assumes next time we hit this time on the clock)
+    elif wallClockTime is not None: # a time is given, let's determine time until /from  EVT (no date assumes next time we hit this time on the clock)
         # first, create a time string
         timeString = ''
         timeValid = True
@@ -116,33 +115,56 @@ def handle_command(command, channel, user) :
             timeValid = False
         if not ( 0 <= int(minutes) <= 59 ) :
             timeValid = False
-
         # convert time
         # present time in a nifty manner, left/right eve time, your time, difference, colors
         #  see elephants formatting, color
         tz_city, tz, offset, now, name = getUserTimezone(user)
+
         response_type = 'in_channel'
         if timeValid is True :
-            mainText = '_*BETA FEATURE UNDER CONSTRUCTION*_\nRequested time is: '+ hours + ':' + minutes + ' EVE Time'
+            print 'timeValid? ' + timeValid
+            hours=int(hours)
+            minutes=int(minutes)
+            reqdEveTime = now.replace(hour=hours, minute=minutes)
+            difference = int((reqdEveTime - now).total_seconds())
+            differenceH, remainder = divmod(difference, 3600)
+            differenceM, s = divmod (remainder, 60)
+            if difference < 0 :
+                sign = ''
+                fromNow = 'ago'
+            else :
+                sign = '+'
+                fromNow = 'from now'
+            theDeltaSecs = datetime.timedelta(seconds=difference)
+            newTimeUTC = now + theDeltaSecs
+            if tz_city is not None:
+                mainText = 'Requested time: '+ reqdEveTime.strftime("%H:%M  %Y-%m-%d") + ' EVE Time\n ' \
+                + '*' + sign + str(differenceH) + 'h '+ str(differenceM) + 'm* ' + fromNow + ': ' \
+                + newTimeUTC.astimezone(pytz.timezone(tz_city)).strftime("%H:%M | %I:%M %p  %Y-%m-%d") + '  (UTC' + str(offset/60/60) + '/' + tz + ') \n'
+                attachmentText = name + "'s current time: " + now.astimezone(pytz.timezone(tz_city)).strftime("%H:%M | %I:%M %p  %Y-%m-%d") + '  (UTC' + str(offset/60/60) + '/' + tz + ')\n' \
+                'EVE current time: ' + now.strftime("%H:%M  %Y-%m-%d")
+            else : # some users do not have a tz in slack, but usually have the tz_label and offset, here I have to trust slack converted properly
+                mainText = 'Requested time: '+ reqdEveTime.strftime("%H:%M  %Y-%m-%d") + ' EVE Time\n ' \
+                + '*' + sign + str(differenceH) + 'h '+ str(differenceM) + 'm* ' + fromNow + ': ' \
+                + (newTimeUTC + datetime.timedelta(seconds=offset)).strftime("%H:%M | %I:%M %p  %Y-%m-%d") + '  (UTC' + str(offset/60/60) + '/' + tz + ') \n'
+                attachmentText = name + "'s current time: " + (now + datetime.timedelta(seconds=offset)).strftime("%H:%M | %I:%M %p  %Y-%m-%d") + '  (UTC' + str(offset/60/60) + '/' + tz + ')\n' \
+                'EVE current time: ' + now.strftime("%H:%M  %Y-%m-%d")
         else :
             mainText = 'Error: requested an invalid EVE time (' + hours + ':' + minutes + ')'
-        if tz_city is not None:
-            attachmentText = name + "'s time: " + now.astimezone(pytz.timezone(tz_city)).strftime("%H:%M | %I:%M %p   %Y-%m-%d") + '  (UTC' + str(offset/60/60) + '/' + tz + ')'
-        else : # some users do not have a tz in slack, but usually have the tz_label and offset, here I have to trust slack converted properly
-            attachmentText = name + "'s time: " + (now + datetime.timedelta(seconds=offset)).strftime("%H:%M | %I:%M %p   %Y-%m-%d") + '  (UTC' + str(offset/60/60) + '/' + tz + ')'
+            attachmentText = ''
 
     # verbose, debug and give current time OR try to determine if we are doing another variant
     elif set(command).intersection(verbose_strings) :
         tz_city, tz, offset, now, name = getUserTimezone(user)
         response_type = 'ephemeral'
-        mainText = 'Current EVE Time: '+ str(now.strftime("*%H:%M*    %Y-%m-%d")) + '\n' \
+        mainText = 'Current EVE Time: '+ str(now.strftime("*%H:%M*   %Y-%m-%d")) + '\n' \
         + 'tz_city: ' + tz_city + '\n' \
         + 'tz: ' + tz + '\n' \
         + 'offset: ' + str(offset) + '\n' \
         + 'now(iso): ' + str(now.isoformat())
         #+ 'name: ' + str(name) + '\n'
         attachmentText = 'attachmentText + now.astimezone(pytz.timezone(tz_city)).strftime(%H:%M (UTC+str(offset/60/60)    %Y-%m-%d)' \
-        + now.astimezone(pytz.timezone(tz_city)).strftime("%H:%M (UTC"+str(offset/60/60)+")" +  "    %Y-%m-%d")
+        + now.astimezone(pytz.timezone(tz_city)).strftime("%H:%M (UTC"+str(offset/60/60)+")" +  "   %Y-%m-%d")
 
     # check user timezone
     elif set(command).intersection(check_mytz_strings) :
@@ -165,7 +187,7 @@ def handle_command(command, channel, user) :
         #elif set(command).intersection(help_strings) :
         response_type = 'ephemeral'
         mainText = '_*EveTime Converter Help*_ \n\n' \
-        'usage: /evt \n' \
+        'usage: /evt k' \
         '             /evt {hhmm|hh:mm|hh-mm} \n' \
         '             /evt {-h|--help} \n' \
         '             /evt something \n\n' \
