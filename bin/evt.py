@@ -187,7 +187,7 @@ def handle_command(command, channel, user) :
         #elif set(command).intersection(help_strings) :
         response_type = 'ephemeral'
         mainText = '_*EveTime Converter Help*_ \n\n' \
-        'usage: /evt k' \
+        'usage: /evt \n' \
         '             /evt {hhmm|hh:mm|hh-mm} \n' \
         '             /evt {-h|--help} \n' \
         '             /evt something \n\n' \
