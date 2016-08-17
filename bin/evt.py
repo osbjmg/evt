@@ -86,15 +86,19 @@ def handle_command(command, channel, user) :
     # if no input, give current time
     if (command is None or ((command is not None) and (set(command).intersection(now_strings)))):
         tz_city, tz, offset, now, name = getUserTimezone(user)
+        if now.hour == 11 and now.minute < 31 :
+            dtWarn = '_*POSSIBLE DOWNTIME WARNING*_\n'
+        else :
+            dtWarn = ''
         response_type = 'in_channel'
-        mainText = 'Current EVE Time: '+ str(now.strftime("*%H:%M*   %Y-%m-%d"))
+        mainText = dtwarn + 'Current EVE Time: '+ str(now.strftime("*%H:%M*   %Y-%m-%d"))
         if tz_city is not None:
             attachmentText = name + "'s current time: " + now.astimezone(pytz.timezone(tz_city)).strftime("%H:%M | %I:%M %p   %Y-%m-%d") + '  (UTC' + str(offset/60/60) + '/' + tz + ')'
         else : # some users do not have a tz in slack, but usually have the tz_label and offset, here I have to trust slack converted properly
             attachmentText = name + "'s current time: " + (now + datetime.timedelta(seconds=offset)).strftime("%H:%M | %I:%M %p   %Y-%m-%d") + '  (UTC' + str(offset/60/60) + '/' + tz + ')'
 
     # consider making these all function calls in the event we need to break?
-    elif wallClockTime is not None: # a time is given, let's determine time until /from  EVT (no date assumes next time we hit this time on the clock)
+    elif wallClockTime is not None: # a time is given, let's determine time until /from  EVT (no date assumes next time we hit this time on the clock, no negatives for now)
         # first, create a time string
         timeString = ''
         timeValid = True
@@ -136,14 +140,18 @@ def handle_command(command, channel, user) :
                 fromNow = 'from now'
             theDeltaSecs = datetime.timedelta(seconds=difference)
             newTimeUTC = now + theDeltaSecs
+            if newTimeUTC.hour == 11 and newTimeUTC.minute < 31 :
+                dtWarn = '_*POSSIBLE DOWNTIME WARNING*_\n'
+            else :
+                dtWarn = ''
             if tz_city is not None:
-                mainText = 'Requested time: '+ reqdEveTime.strftime("%H:%M  %Y-%m-%d") + ' EVE Time\n ' \
+                mainText = dtWarn + 'Requested time: '+ reqdEveTime.strftime("%H:%M  %Y-%m-%d") + ' EVE Time\n ' \
                 + '*' + sign + str(differenceH) + 'h '+ str(differenceM) + 'm* ' + fromNow + ': ' \
                 + newTimeUTC.astimezone(pytz.timezone(tz_city)).strftime("%H:%M | %I:%M %p  %Y-%m-%d") + '  (UTC' + str(offset/60/60) + '/' + tz + ') \n'
                 attachmentText = name + "'s current time: " + now.astimezone(pytz.timezone(tz_city)).strftime("%H:%M | %I:%M %p  %Y-%m-%d") + '  (UTC' + str(offset/60/60) + '/' + tz + ')\n' \
                 'EVE current time: ' + now.strftime("%H:%M  %Y-%m-%d")
             else : # some users do not have a tz in slack, but usually have the tz_label and offset, here I have to trust slack converted properly
-                mainText = 'Requested time: '+ reqdEveTime.strftime("%H:%M  %Y-%m-%d") + ' EVE Time\n ' \
+                mainText = dtWarn + 'Requested time: '+ reqdEveTime.strftime("%H:%M  %Y-%m-%d") + ' EVE Time\n ' \
                 + '*' + sign + str(differenceH) + 'h '+ str(differenceM) + 'm* ' + fromNow + ': ' \
                 + (newTimeUTC + datetime.timedelta(seconds=offset)).strftime("%H:%M | %I:%M %p  %Y-%m-%d") + '  (UTC' + str(offset/60/60) + '/' + tz + ') \n'
                 attachmentText = name + "'s current time: " + (now + datetime.timedelta(seconds=offset)).strftime("%H:%M | %I:%M %p  %Y-%m-%d") + '  (UTC' + str(offset/60/60) + '/' + tz + ')\n' \
