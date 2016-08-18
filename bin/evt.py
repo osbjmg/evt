@@ -91,7 +91,7 @@ def handle_command(command, channel, user) :
         else :
             dtWarn = ''
         response_type = 'in_channel'
-        mainText = dtwarn + 'Current EVE Time: '+ str(now.strftime("*%H:%M*   %Y-%m-%d"))
+        mainText = dtWarn + 'Current EVE Time: '+ str(now.strftime("*%H:%M*   %Y-%m-%d"))
         if tz_city is not None:
             attachmentText = name + "'s current time: " + now.astimezone(pytz.timezone(tz_city)).strftime("%H:%M | %I:%M %p   %Y-%m-%d") + '  (UTC' + str(offset/60/60) + '/' + tz + ')'
         else : # some users do not have a tz in slack, but usually have the tz_label and offset, here I have to trust slack converted properly
