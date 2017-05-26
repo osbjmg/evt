@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # -* coding: UTF-8 -*-
 #import iso8602
+#import iso-8601
 import pprint
 import cgi
 import cgitb
@@ -10,6 +11,10 @@ import datetime
 import pytz
 import re
 import os
+
+#### ToDo ####
+# Assume wallClockTime is not None scenario time is not negative, go to the next day
+# Convert a full date and time to user time
 
 cgitbLogDir = os.environ.get('SLACKBOTS_J3B_CGI_LOGDIR')
 cgitb.enable(display=0, logdir=cgitbLogDir, format='text') # display=1 if we want to print errors, they will log to cgitbLogDir always though
